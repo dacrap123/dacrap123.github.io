@@ -7,27 +7,234 @@
   <!-- Include canvas-confetti library to enable confetti() -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
-    :root { --cell-size: 40px; }
-    body { font-family: sans-serif; background: #f3f4f6; padding: 1rem; }
-    #undoBtn { position: absolute; top:1rem; right:1rem; padding:0.5rem 1rem; background:#f59e0b; color:white; border:none; border-radius:0.375rem; cursor:pointer; }
-    .cell { flex:0 0 var(--cell-size); width:var(--cell-size); height:var(--cell-size); border:1px solid #ccc; border-radius:50%; display:flex; align-items:center; justify-content:center; box-sizing:border-box; background:white; }
-    .scratch-cell { background:#fee2e2; cursor:pointer; }
-    .start-cell { background:repeating-linear-gradient(45deg,#fff 0 8px,#000 8px 16px); }
-    .finish-cell { background:#d1fae5; }
-    .horse { flex:0 0 24px; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#8b5cf6; color:white; font-size:11px; box-sizing:border-box; }
-    #overlay,#endOverlay,#betOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; }
-    .box { background:white; padding:2rem; border-radius:1rem; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
-    .bet-input { width:100px; padding:0.5rem; border:1px solid #ccc; border-radius:0.25rem; box-sizing:border-box; }
-    .flex { display:flex; }
-    .justify-between { justify-content:space-between; }
-    .cursor-pointer { cursor:pointer; }
-    .overflow-x-auto { overflow-x:auto; }
-    .space-y-1 > * + * { margin-top:0.25rem; }
+    :root {
+      --cell-size: 40px;
+      --bg-color: #f3f4f6;
+      --text-color: #111827;
+      --muted-text-color: #4b5563;
+      --panel-bg: #ffffff;
+      --panel-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      --button-bg: #1f2937;
+      --button-text: #ffffff;
+      --button-border: #1f2937;
+      --cell-bg: #ffffff;
+      --cell-border: #d1d5db;
+      --scratch-bg: #fee2e2;
+      --start-bg: repeating-linear-gradient(45deg, #fff 0 8px, #000 8px 16px);
+      --finish-bg: #d1fae5;
+      --horse-bg: #8b5cf6;
+      --horse-text: #ffffff;
+      --overlay-bg: rgba(0, 0, 0, 0.6);
+      --focus-outline: 0 0 0 3px rgba(37, 99, 235, 0.45);
+    }
+
+    body {
+      font-family: sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      padding: 1rem;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    #undoBtn,
+    #contrastBtn {
+      position: absolute;
+      top: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    }
+
+    #undoBtn {
+      right: 1rem;
+      background: #f59e0b;
+      color: #ffffff;
+      border-color: #f59e0b;
+    }
+
+    #contrastBtn {
+      left: 1rem;
+      background: var(--button-bg);
+      color: var(--button-text);
+      border-color: var(--button-border);
+    }
+
+    #undoBtn:focus-visible,
+    #contrastBtn:focus-visible,
+    button:focus-visible,
+    .bet-input:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-outline);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+    }
+
+    #overlay,
+    #endOverlay,
+    #betOverlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box {
+      background: var(--panel-bg);
+      color: var(--text-color);
+      padding: 2rem;
+      border-radius: 1rem;
+      text-align: center;
+      box-shadow: var(--panel-shadow);
+      border: 2px solid var(--cell-border);
+    }
+
+    .cell {
+      flex: 0 0 var(--cell-size);
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border: 1px solid var(--cell-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      background: var(--cell-bg);
+      color: var(--text-color);
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .scratch-cell {
+      background: var(--scratch-bg);
+      cursor: pointer;
+    }
+
+    .start-cell {
+      background: var(--start-bg);
+    }
+
+    .finish-cell {
+      background: var(--finish-bg);
+    }
+
+    .horse {
+      flex: 0 0 24px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--horse-bg);
+      color: var(--horse-text);
+      font-size: 11px;
+      box-sizing: border-box;
+      font-weight: 700;
+    }
+
+    .bet-input {
+      width: 100px;
+      padding: 0.5rem;
+      border: 1px solid var(--cell-border);
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+      background: var(--cell-bg);
+      color: var(--text-color);
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .bet-input:disabled {
+      background: var(--cell-bg);
+      color: var(--text-color);
+      opacity: 1;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .cursor-pointer {
+      cursor: pointer;
+    }
+
+    .overflow-x-auto {
+      overflow-x: auto;
+    }
+
+    .space-y-1 > * + * {
+      margin-top: 0.25rem;
+    }
+
+    body.high-contrast {
+      --bg-color: #000000;
+      --text-color: #ffffff;
+      --muted-text-color: #f9fafb;
+      --panel-bg: #000000;
+      --panel-shadow: 0 0 0 4px rgba(255, 255, 255, 0.55);
+      --button-bg: #ffffff;
+      --button-text: #000000;
+      --button-border: #ffffff;
+      --cell-bg: #000000;
+      --cell-border: #ffffff;
+      --scratch-bg: #ff4d00;
+      --finish-bg: #00ff66;
+      --horse-bg: #ffff00;
+      --horse-text: #000000;
+      --overlay-bg: rgba(255, 255, 255, 0.15);
+      --focus-outline: 0 0 0 4px rgba(255, 255, 255, 0.9);
+    }
+
+    body.high-contrast .text-gray-600 {
+      color: var(--muted-text-color);
+    }
+
+    body.high-contrast button {
+      background: var(--button-bg);
+      color: var(--button-text);
+      border-color: var(--button-border);
+      box-shadow: 0 0 0 2px var(--button-border);
+    }
+
+    body.high-contrast button:not(:disabled):hover {
+      background: #e5e7eb;
+      color: #000000;
+    }
+
+    body.high-contrast #undoBtn {
+      background: var(--button-bg);
+      color: var(--button-text);
+      border-color: var(--button-border);
+      box-shadow: 0 0 0 2px var(--button-border);
+    }
+
+    body.high-contrast .cell {
+      border-width: 2px;
+    }
+
+    body.high-contrast .bet-input {
+      border-width: 2px;
+    }
+
+    body.high-contrast .bet-input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
   </style>
 </head>
 <body>
   <audio id="startSound" src="start-trumpet.mp3"></audio>
   <button id="undoBtn">Undo</button>
+  <button id="contrastBtn" aria-pressed="false">Enable High Contrast</button>
   <h1 class="text-2xl font-semibold mb-4">Horse Race Board</h1>
 
   <div id="betOverlay"><div class="box">
@@ -76,8 +283,10 @@
     const resetBtn = document.getElementById('resetBtn');
     const winnerMsg = document.getElementById('winnerMsg');
     const undoBtn = document.getElementById('undoBtn');
+    const contrastBtn = document.getElementById('contrastBtn');
     const betConfirm = document.getElementById('betConfirm');
     const startSound = document.getElementById('startSound');
+    const HIGH_CONTRAST_KEY = 'horse-race-high-contrast';
 
     function snapshot() {
       return {
@@ -90,6 +299,20 @@
     function updateUndo() {
       undoBtn.disabled = history.length === 0;
       undoBtn.style.opacity = history.length === 0 ? 0.5 : 1;
+    }
+
+    function setHighContrast(enabled) {
+      document.body.classList.toggle('high-contrast', enabled);
+      if (contrastBtn) {
+        const label = enabled ? 'Disable High Contrast' : 'Enable High Contrast';
+        contrastBtn.textContent = label;
+        contrastBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      }
+      try {
+        localStorage.setItem(HIGH_CONTRAST_KEY, enabled ? '1' : '0');
+      } catch (err) {
+        // Ignore storage errors (e.g., private browsing)
+      }
     }
 
     undoBtn.onclick = () => {
@@ -203,7 +426,22 @@
 
     resetBtn.onclick = initGame;
 
-    document.addEventListener('DOMContentLoaded', () => { betOverlay.style.display = 'flex'; initGame(); });
+    contrastBtn.onclick = () => {
+      const nextState = !document.body.classList.contains('high-contrast');
+      setHighContrast(nextState);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let savedContrast = false;
+      try {
+        savedContrast = localStorage.getItem(HIGH_CONTRAST_KEY) === '1';
+      } catch (err) {
+        savedContrast = document.body.classList.contains('high-contrast');
+      }
+      setHighContrast(savedContrast);
+      betOverlay.style.display = 'flex';
+      initGame();
+    });
   </script>
 </body>
 </html>
